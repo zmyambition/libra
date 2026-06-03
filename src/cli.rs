@@ -31,7 +31,7 @@ use crate::{
 const ROOT_AFTER_HELP: &str = "\
 Command Groups:
   Repository Setup        init, clone, config
-  Working Tree            status, add, rm, mv, restore, clean, stash, lfs, worktree
+  Working Tree            stats, status, add, rm, mv, restore, clean, stash, lfs, worktree
   History Inspection      log, shortlog, show, show-ref, ls-remote, diff, grep, blame, describe
   Commit And Branching    commit, branch, switch, checkout, tag, merge, rebase, reset, cherry-pick, revert
   Remote And Cloud        remote, fetch, pull, push, open, cloud, publish
@@ -282,6 +282,11 @@ enum Commands {
     #[command(about = "Manage repository configurations", alias = "cfg")]
     Config(command::config::ConfigArgs),
 
+    #[command(
+        about = "Count files by extension in the working directory",
+        alias = "stat"
+    )]
+    Stats(command::stats::StatsArgs),
     #[command(about = "Show the working tree status", alias = "st")]
     Status(command::status::StatusArgs),
     #[command(about = "Add file contents to the index")]
@@ -868,7 +873,8 @@ fn command_preflight(command: &Commands) -> CliResult<CommandPreflight> {
         | Commands::Open(_)
         | Commands::CodeControl(_)
         | Commands::LsRemote(_)
-        | Commands::Sandbox(_) => Ok(CommandPreflight::none()),
+        | Commands::Sandbox(_)
+        | Commands::Stats(_) => Ok(CommandPreflight::none()),
         Commands::HashObject(args) if !args.write => {
             match utils::util::try_get_storage_path(None) {
                 Ok(storage) => Ok(CommandPreflight::repo_hash_kind_without_schema_guard(
@@ -1150,6 +1156,7 @@ pub async fn parse_async(args: Option<&[&str]>) -> CliResult<()> {
         Commands::Add(cmd_args) => command::add::execute_safe(cmd_args, &output).await?,
         Commands::Rm(cmd_args) => command::remove::execute_safe(cmd_args, &output).await?,
         Commands::Restore(cmd_args) => command::restore::execute_safe(cmd_args, &output).await?,
+        Commands::Stats(cmd_args) => command::stats::execute_safe(cmd_args, &output).await?,
         Commands::Status(cmd_args) => command::status::execute_safe(cmd_args, &output).await?,
         Commands::Clean(cmd_args) => command::clean::execute_safe(cmd_args, &output).await?,
         Commands::Stash(cmd) => command::stash::execute_safe(cmd, &output).await?,
